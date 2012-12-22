@@ -70,6 +70,11 @@ namespace MonoTouch.NUnit.UI {
 		public UINavigationController NavigationController {
 			get { return (UINavigationController) window.RootViewController; }
 		}
+
+        public string ResultsXml {
+            get { return TouchOptions.Current.ResultsXml; }
+            set { TouchOptions.Current.ResultsXml = value; }
+        }
 		
 		List<Assembly> assemblies = new List<Assembly> ();
 		ManualResetEvent mre = new ManualResetEvent (false);
@@ -283,8 +288,8 @@ namespace MonoTouch.NUnit.UI {
 		
 		public void CloseWriter ()
 		{
-			int total = passed + inconclusive + failed; // ignored are *not* run
-			Writer.WriteLine ("Tests run: {0} Passed: {1} Inconclusive: {2} Failed: {3} Ignored: {4}", total, passed, inconclusive, failed, ignored);
+		    int total = passed + inconclusive + failed; // ignored are *not* run
+		    Writer.WriteLine ("Tests run: {0} Passed: {1} Inconclusive: {2} Failed: {3} Ignored: {4}", total, passed, inconclusive, failed, ignored);
 
 			Writer.Close ();
 			Writer = null;
@@ -440,6 +445,23 @@ namespace MonoTouch.NUnit.UI {
 			current.TestObject = test is TestSuite ? null : Reflect.Construct ((test as TestMethod).Method.ReflectedType, null);
 			WorkItem wi = WorkItem.CreateWorkItem (test, current, this);
 			wi.Execute ();
+
+            string resultsXml = this.ResultsXml;
+            
+            if (!string.IsNullOrEmpty(resultsXml)) {
+                if (!Path.IsPathRooted(resultsXml)) {
+                    resultsXml = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, resultsXml));
+                }
+                
+                string dir = Path.GetDirectoryName(resultsXml);
+
+                if (!Directory.Exists(dir)) {
+                    Directory.CreateDirectory(dir);
+                }
+
+                new NUnit3XmlOutputWriter().WriteResultFile(wi.Result, resultsXml);
+            }
+
 			return wi.Result;
 		}
 

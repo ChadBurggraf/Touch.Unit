@@ -44,6 +44,7 @@ namespace MonoTouch.NUnit.UI {
 				{ "hostname=", "Comma-separated list of host names or IP address to (try to) connect to", v => HostName = v },
 				{ "hostport=", "TCP port to connect to.", v => HostPort = int.Parse (v) },
 				{ "enablenetwork", "Enable the network reporter.", v => EnableNetwork = true },
+                { "resultsxml=", "File path to write XML output to.", v => ResultsXml = v }
 			};
 			
 			try {
@@ -68,6 +69,8 @@ namespace MonoTouch.NUnit.UI {
 		}
 
 		public bool SortNames { get; set; }
+
+        public string ResultsXml { get; set; }
 		
 		[CLSCompliant (false)]
 		public UIViewController GetViewController ()
