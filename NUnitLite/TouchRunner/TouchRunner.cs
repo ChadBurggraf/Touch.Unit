@@ -461,7 +461,7 @@ namespace MonoTouch.NUnit.UI {
                     Directory.CreateDirectory(dir);
                 }
 
-                new NUnit3XmlOutputWriter().WriteResultFile(wi.Result, resultsXml);
+                new NUnit2XmlOutputWriter().WriteResultFile(wi.Result, resultsXml);
             }
 
 			return wi.Result;
