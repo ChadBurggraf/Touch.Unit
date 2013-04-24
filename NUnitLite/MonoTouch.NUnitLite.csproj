@@ -10,6 +10,8 @@
     <OutputType>Library</OutputType>
     <RootNamespace>NUnitLite</RootNamespace>
     <AssemblyName>NUnitLite</AssemblyName>
+    <ReleaseVersion>0.6.0</ReleaseVersion>
+    <SynchReleaseVersion>false</SynchReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
