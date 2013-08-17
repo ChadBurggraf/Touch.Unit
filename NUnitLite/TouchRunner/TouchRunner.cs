@@ -3,7 +3,7 @@
 // Authors:
 //	Sebastien Pouliot  <sebastien@xamarin.com>
 //
-// Copyright 2011-2012 Xamarin Inc.
+// Copyright 2011-2013 Xamarin Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,11 +36,9 @@ using NUnit.Framework.Internal;
 using NUnit.Framework.Internal.Commands;
 using NUnit.Framework.Internal.WorkItems;
 
-using NUnitLite.Runner;
-
 namespace MonoTouch.NUnit.UI {
 	
-	public class TouchRunner : ITestListener, ITestFilter {
+	public class TouchRunner : ITestListener {
 		
 		UIWindow window;
 		int passed;
@@ -48,6 +46,7 @@ namespace MonoTouch.NUnit.UI {
 		int ignored;
 		int inconclusive;
 		TestSuite suite = new TestSuite (String.Empty);
+		ITestFilter filter;
 
 		[CLSCompliant (false)]
 		public TouchRunner (UIWindow window)
@@ -56,11 +55,17 @@ namespace MonoTouch.NUnit.UI {
 				throw new ArgumentNullException ("window");
 			
 			this.window = window;
+			filter = TestFilter.Empty;
 		}
 		
 		public bool AutoStart {
 			get { return TouchOptions.Current.AutoStart; }
 			set { TouchOptions.Current.AutoStart = value; }
+		}
+		
+		public ITestFilter Filter {
+			get { return filter; }
+			set { filter = value; }
 		}
 		
 		public bool TerminateAfterExecution {
@@ -276,6 +281,8 @@ namespace MonoTouch.NUnit.UI {
 			UIDevice device = UIDevice.CurrentDevice;
 			Writer.WriteLine ("[{0}:\t{1} v{2}]", device.Model, device.SystemName, device.SystemVersion);
 			Writer.WriteLine ("[Device Name:\t{0}]", device.Name);
+			Writer.WriteLine ("[Device UDID:\t{0}]", UniqueIdentifier);
+			Writer.WriteLine ("[Device Locale:\t{0}]", NSLocale.CurrentLocale.Identifier);
 			Writer.WriteLine ("[Device Date/Time:\t{0}]", now); // to match earlier C.WL output
 
 			Writer.WriteLine ("[Bundle:\t{0}]", NSBundle.MainBundle.BundleIdentifier);
@@ -286,11 +293,20 @@ namespace MonoTouch.NUnit.UI {
 			inconclusive = 0;
 			return true;
 		}
+
+		// Apple blacklisted `uniqueIdentifier` (for the appstore) but it's still 
+		// something useful to have inside the test logs
+		static string UniqueIdentifier {
+			get {
+				IntPtr handle = UIDevice.CurrentDevice.Handle;
+				return NSString.FromHandle (Messaging.IntPtr_objc_msgSend (handle, Selector.GetHandle("uniqueIdentifier")));
+			}
+		}
 		
 		public void CloseWriter ()
 		{
-		    int total = passed + inconclusive + failed; // ignored are *not* run
-		    Writer.WriteLine ("Tests run: {0} Passed: {1} Inconclusive: {2} Failed: {3} Ignored: {4}", total, passed, inconclusive, failed, ignored);
+			int total = passed + inconclusive + failed; // ignored are *not* run
+			Writer.WriteLine ("Tests run: {0} Passed: {1} Inconclusive: {2} Failed: {3} Ignored: {4}", total, passed, inconclusive, failed, ignored);
 
 			Writer.Close ();
 			Writer = null;
@@ -383,7 +399,7 @@ namespace MonoTouch.NUnit.UI {
 
 				string name = result.Test.Name;
 				if (!String.IsNullOrEmpty (name))
-					Writer.WriteLine ("{0} : {1} ms", name, result.Time * 1000);
+					Writer.WriteLine ("{0} : {1} ms", name, result.Duration.TotalMilliseconds);
 			} else {
 				if (result.IsSuccess ()) {
 					Writer.Write ("\t[PASS] ");
@@ -444,7 +460,7 @@ namespace MonoTouch.NUnit.UI {
 			current.WorkDirectory = Environment.CurrentDirectory;
 			current.Listener = this;
 			current.TestObject = test is TestSuite ? null : Reflect.Construct ((test as TestMethod).Method.ReflectedType, null);
-			WorkItem wi = WorkItem.CreateWorkItem (test, current, this);
+			WorkItem wi = WorkItem.CreateWorkItem (test, current, filter);
 			wi.Execute ();
 
             string resultsXml = this.ResultsXml;
@@ -474,11 +490,6 @@ namespace MonoTouch.NUnit.UI {
 
 		public void TestOutput (TestOutput testOutput)
 		{
-		}
-
-		bool ITestFilter.Pass (ITest test)
-		{
-			return true;
 		}
 	}
 }

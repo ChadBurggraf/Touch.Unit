@@ -128,6 +128,7 @@ class SimpleListener {
 		string launchdev = null;
 		string launchsim = null;
 		bool autoexit = false;
+		string device_name = String.Empty;
 		
 		var os = new OptionSet () {
 			{ "h|?|help", "Display help", v => help = true },
@@ -138,6 +139,7 @@ class SimpleListener {
 			{ "launchdev=", "Run the specified app on a device (specify using bundle identifier)", v => launchdev = v },
 			{ "launchsim=", "Run the specified app on the simulator (specify using path to *.app directory)", v => launchsim = v },
 			{ "autoexit", "Exit the server once a test run has completed (default: false)", v => autoexit = true },
+			{ "devname=", "Specify the device to connect to", v => device_name = v},
 		};
 		
 		try {
@@ -161,6 +163,10 @@ class SimpleListener {
 			listener.LogFile = log_file;
 			listener.AutoExit = autoexit;
 			
+			string mt_root = Environment.GetEnvironmentVariable ("MONOTOUCH_ROOT");
+			if (String.IsNullOrEmpty (mt_root))
+				mt_root = "/Developer/MonoTouch";
+
 			if (launchdev != null) {
 				ThreadPool.QueueUserWorkItem ((v) => {
 					using (Process proc = new Process ()) {
@@ -170,6 +176,8 @@ class SimpleListener {
 							procArgs.Append ("--sdkroot ").Append (sdk_root);
 						procArgs.Append (" --launchdev ");
 						procArgs.Append (launchdev);
+						if (!String.IsNullOrEmpty (device_name))
+							procArgs.Append (" --devname=").Append (device_name);
 						procArgs.Append (" -argument=-connection-mode -argument=none");
 						procArgs.Append (" -argument=-app-arg:-autostart");
 						procArgs.Append (" -argument=-app-arg:-autoexit");
@@ -182,7 +190,7 @@ class SimpleListener {
 								procArgs.Append (',');
 							procArgs.Append (ipAddresses [i].ToString ());
 						}
-						proc.StartInfo.FileName = "/Developer/MonoTouch/usr/bin/mtouch";
+						proc.StartInfo.FileName = Path.Combine (mt_root, "usr/bin/mtouch");
 						proc.StartInfo.Arguments = procArgs.ToString ();
 						proc.Start ();
 						proc.WaitForExit ();
@@ -208,7 +216,7 @@ class SimpleListener {
 						procArgs.Append (" -argument=-app-arg:-enablenetwork");
 						procArgs.Append (" -argument=-app-arg:-hostname:127.0.0.1");
 						procArgs.AppendFormat (" -argument=-app-arg:-hostport:{0}", listener.Port);
-						proc.StartInfo.FileName = "/Developer/MonoTouch/usr/bin/mtouch";
+						proc.StartInfo.FileName = Path.Combine (mt_root, "usr/bin/mtouch");
 						proc.StartInfo.Arguments = procArgs.ToString ();
 						proc.StartInfo.UseShellExecute = false;
 						proc.StartInfo.RedirectStandardError = true;
