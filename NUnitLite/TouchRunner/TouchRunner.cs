@@ -36,6 +36,8 @@ using NUnit.Framework.Internal;
 using NUnit.Framework.Internal.Commands;
 using NUnit.Framework.Internal.WorkItems;
 
+using NUnitLite.Runner;
+
 namespace MonoTouch.NUnit.UI {
 	
 	public class TouchRunner : ITestListener {
